@@ -5,8 +5,8 @@ auspice_dir = 'auspice'
 
 rule all:
     input:
-        "auspice/rsv_a_genomeL.json",
-        "auspice/rsv_a_genomeSN1-M.json",
+        "auspice/rsv_a_L.json",
+        "auspice/rsv_a_SN1-M.json",
 
 
 
@@ -18,10 +18,6 @@ include: "workflow/snakemake_rules/core.smk"
 include: "workflow/snakemake_rules/export.smk"
 
 include: "workflow/snakemake_rules/download.smk"
-
-include: "workflow/snakemake_rules/glycosylation.smk"
-
-#include: "workflow/snakemake_rules/clades.smk"
 
 
 if config.get("deploy_url"):
