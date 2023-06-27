@@ -1,13 +1,14 @@
 configfile: "config/configfile.yaml"
 
-build_dir = 'results'
+build_dir = 'results_folder'
 auspice_dir = 'auspice'
 
 rule all:
     input:
-        "auspice/rsv_a_L.json",
-        "auspice/rsv_a_SN1-M.json",
-
+        expand("auspice/rsv_a_L.json",
+        a_or_b = config.get("subtypes",['a'])),
+        expand("auspice/rsv_a_SN1-M.json",
+        a_or_b = config["subtypes"])
 
 
 #subtype = config.get("subtypes",['a']),
@@ -19,9 +20,6 @@ include: "workflow/snakemake_rules/export.smk"
 
 include: "workflow/snakemake_rules/download.smk"
 
-
-if config.get("deploy_url"):
-    include: "workflow/snakemake_rules/nextstrain_automation.smk"
 
 rule clean:
     params:
