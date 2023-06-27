@@ -32,8 +32,7 @@ function main()
 
 
     write_newick(parse_args["outputrest"], t_without) 
-    write_newick(parse_args["outputl", t_L])
-    end
+    write_newick(parse_args["outputl"], t_L)
 end
 
 

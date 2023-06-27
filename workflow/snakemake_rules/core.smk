@@ -252,6 +252,14 @@ rule resolve:
     output:
         output_L = build_dir + "/{a_or_b}/onlyLtree_resolved.nwk",
         output_rest = build_dir + "/{a_or_b}/onlyNS1-Mtree_raw.nwk"
+    shell:
+        """
+        julia "scripts/treeknit.jl" \
+        --treel {input.tree_L} \
+        --treerest {input.tree_rest} \
+        --outputl {output.output_L} \
+        --outputrest {output.output_rest}
+        """
 
 
 rule refine:
@@ -263,7 +271,7 @@ rule refine:
           - estimate {params.date_inference} node dates
         """
     input:
-        tree = rules.tree.output.tree,
+        tree = rules.resolve.output.output_L,
         alignment = rules.tree.input.alignment,
         metadata = rules.filter.input.metadata
     output:
