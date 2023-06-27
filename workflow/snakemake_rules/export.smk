@@ -81,3 +81,15 @@ rule rename_clade_labels:
 
         cp {input.root_sequence} {output.root_sequence}
         """
+
+rule treeknit:
+    input:
+        tree_1 = build_dir + "/{a_or_b}/{L_or_rest}tree.nwk",
+        tree_2 = build_dir + "/{a_or_b}/{L_or_rest}tree.nwk",
+    output:
+        "tanglegram.nwk"
+    shell:
+        """
+        Julia \
+        treeknit {input.tree_1} {input.tree_2}
+        """

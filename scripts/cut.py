@@ -13,10 +13,8 @@ def cut(oldalignment, newalignment, referencefile, gene, min_length=0):
             if feature.type =='gene':
                 a =str((list(feature.qualifiers.items())[0])[-1])[2:-2]
                 if a == gene:
-                    print(a)
                     startofgene = int(list(feature.location)[0])
                     endofgene =  int(list(feature.location)[-1])+1
-                    print(startofgene, endofgene, (endofgene-startofgene))
 
         alignment =SeqIO.parse(oldalignment, 'fasta')
         for entry in alignment:
