@@ -4,8 +4,8 @@ This part of the workflow expects input files
             metadata = "data/metadata.tsv"
 '''
 
-L_or_rest = ["SN1-M", "L"]
-L_OR_REST = ["SN1-M", "L"]
+L_or_rest = ["NS1-M", "L"]
+L_OR_REST = ["NS1-M", "L"]
 rule wrangle_metadata:
     input:
         metadata="data/{a_or_b}/metadata.tsv",
@@ -185,7 +185,7 @@ rule split:
         reference = "config/{a_or_b}reference.gbk",
     output:
         l = build_dir + "/{a_or_b}/onlyL%GENE.fasta",
-        rest = build_dir + "/{a_or_b}/onlySN1-M%GENE.fasta"
+        rest = build_dir + "/{a_or_b}/onlyNS1-M%GENE.fasta"
     shell:
         """
         python "scripts/split_aligned.py" \
@@ -214,10 +214,10 @@ rule check_identical:
         """keeping only sequences which are present in both split files"""
     input:
         l= build_dir + "/{a_or_b}/onlyL%GENE.fasta",
-        rest = build_dir + "/{a_or_b}/onlySN1-M%GENE.fasta"
+        rest = build_dir + "/{a_or_b}/onlyNS1-M%GENE.fasta"
     output:
         l = build_dir + "/{a_or_b}/onlyL%GENE_identical.fasta",
-        rest = build_dir + "/{a_or_b}/onlySN1-M%GENE_identical.fasta"
+        rest = build_dir + "/{a_or_b}/onlyNS1-M%GENE_identical.fasta"
     shell:
         """
         python "scripts/check_identical.py" \
@@ -248,10 +248,10 @@ rule resolve:
         """Resolving trees"""
     input:
         tree_L = build_dir + "/{a_or_b}/onlyLtree_raw.nwk",
-        tree_rest = build_dir + "/{a_or_b}/onlySN1-Mtree_raw.nwk"
+        tree_rest = build_dir + "/{a_or_b}/onlyNS1-Mtree_raw.nwk"
     output:
         output_L = build_dir + "/{a_or_b}/onlyLtree_resolved.nwk",
-        output_rest = build_dir + "/{a_or_b}/onlyNS1-Mtree_raw.nwk"
+        output_rest = build_dir + "/{a_or_b}/onlyNS1-Mtree_resolved.nwk"
     shell:
         """
         julia "scripts/treeknit.jl" \
@@ -261,26 +261,18 @@ rule resolve:
         --outputrest {output.output_rest}
         """
 
-
 rule refine:
     message:
         """
         Refining tree
-          - estimate timetree
-          - use {params.coalescent} coalescent timescale
-          - estimate {params.date_inference} node dates
         """
     input:
-        tree = rules.resolve.output.output_L,
+        tree = build_dir + "/{a_or_b}/only{L_or_rest}tree_resolved.nwk",
         alignment = rules.tree.input.alignment,
         metadata = rules.filter.input.metadata
     output:
         tree = build_dir + "/{a_or_b}/{L_or_rest}tree.nwk",
         node_data = build_dir + "/{a_or_b}/{L_or_rest}branch_lengths.json"
-    params:
-    	coalescent = config["refine"]["coalescent"],
-    	clock_filter_iqd = config["refine"]["clock_filter_iqd"],
-    	date_inference = config["refine"]["date_inference"]
     shell:
         """
         augur refine \
@@ -289,12 +281,37 @@ rule refine:
             --metadata {input.metadata} \
             --output-tree {output.tree} \
             --output-node-data {output.node_data} \
-            --coalescent {params.coalescent} \
-            --date-inference {params.date_inference} \
-            --date-confidence \
-            --timetree \
-            --clock-filter-iqd {params.clock_filter_iqd}
+            --no-covariance \
+            --keep-polytomies \
+            --keep-root 
         """
+
+#rule refine_generic:
+#    input:
+#        tree = rules.resolve.output.output_L,
+#        alignment = rules.tree.input.alignment,
+#        metadata = rules.filter.input.metadata
+#    output:
+#        tree = build_dir + "/{a_or_b}/{L_or_rest}tree.nwk",
+#        node_data = build_dir + "/{a_or_b}/{L_or_rest}branch_lengths.json"
+##  params:
+ #   	coalescent = config["refine"]["coalescent"],
+ #   	clock_filter_iqd = config["refine"]["clock_filter_iqd"],
+ #   	date_inference = config["refine"]["date_inference"]
+ #   shell:
+ #       """
+ #       augur refine \
+ #           --tree {input.tree} \
+ #           --alignment {input.alignment} \
+ #           --metadata {input.metadata} \
+ #           --output-tree {output.tree} \
+ #           --output-node-data {output.node_data} \
+ #           --coalescent {params.coalescent} \
+ #           --date-inference {params.date_inference} \
+ #           --date-confidence \
+ #           --timetree \
+ #           --clock-filter-iqd {params.clock_filter_iqd}
+ #       """
 
 rule ancestral:
     message:
