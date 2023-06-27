@@ -4,13 +4,13 @@ This part of the workflow expects input files
             metadata = "data/metadata.tsv"
 '''
 
-L_or_rest = ["SN1-M", "L"]
-
+L_or_rest = ["NS1-M", "L"]
+L_OR_REST = ["NS1-M", "L"]
 rule wrangle_metadata:
     input:
-        metadata="data/a/metadata.tsv",
+        metadata="data/{a_or_b}/metadata.tsv",
     output:
-        metadata="data/a/metadata_by_accession.tsv"
+        metadata="data/{a_or_b}/metadata_by_accession.tsv"
     params:
         strain_id=lambda w: config.get("strain_id_field", "strain"),
     shell:
@@ -26,9 +26,9 @@ rule index_sequences:
         Creating an index of sequence composition for filtering.
         """
     input:
-        sequences = "data/a/sequences.fasta"
+        sequences = "data/{a_or_b}/sequences.fasta"
     output:
-        sequence_index = build_dir + "/a/sequence_index.tsv"
+        sequence_index = build_dir + "/{a_or_b}/sequence_index.tsv"
     shell:
         """
         augur index \
@@ -42,10 +42,10 @@ rule newreference:
         Making new reference
         """
     input:
-        oldreference = "config/areference.gbk"
+        oldreference = "config/{a_or_b}reference.gbk"
     output:
-        newreferencegbk = build_dir + "/a/{gene}_reference.gbk",
-        newreferencefasta = build_dir + "/a/{gene}_reference.fasta",
+        newreferencegbk = build_dir + "/{a_or_b}/{gene}_reference.gbk",
+        newreferencefasta = build_dir + "/{a_or_b}/{gene}_reference.fasta",
     params:
         gene = lambda w: w.gene,
     shell:
@@ -63,17 +63,18 @@ rule filter:
         filtering sequences
         """
     input:
-        sequences = "data/a/sequences.fasta",
-        reference = "config/areference.gbk",
-        metadata = "data/a/metadata_by_accession.tsv",
+        sequences = "data/{a_or_b}/sequences.fasta",
+        reference = "config/{a_or_b}reference.gbk",
+        metadata = "data/{a_or_b}/metadata_by_accession.tsv",
         sequence_index = rules.index_sequences.output,
         exclude = config['exclude']
     output:
-    	sequences = build_dir + "/a/filtered.fasta"
+    	sequences = build_dir + "/{a_or_b}/filtered.fasta"
     params:
     	group_by = config["filter"]["group_by"],
     	min_coverage = lambda w: f'genome_coverage>{config["filter"]["min_coverage"].get("genome", 10000)}',
-    	subsample_max_sequences = lambda w: config["filter"]["subsample_max_sequences"].get("genome", 1000)
+    	subsample_max_sequences = lambda w: config["filter"]["subsample_max_sequences"].get("genome", 1000),
+        strains = "config/dropped_strains.txt"
     shell:
         """
         augur filter \
@@ -84,7 +85,8 @@ rule filter:
             --output {output.sequences} \
             --group-by {params.group_by} \
             --subsample-max-sequences {params.subsample_max_sequences} \
-            --query '{params.min_coverage}'
+            --query '{params.min_coverage}' \
+            --exclude {params.strains}
         """
 
 rule nextalign:
@@ -94,9 +96,9 @@ rule nextalign:
         """
     input:
         sequences = rules.filter.output.sequences,
-        reference = build_dir + "/a/genome_reference.fasta"
+        reference = build_dir + "/{a_or_b}/genome_reference.fasta"
     output:
-        alignment = build_dir + "/a/sequences.aligned.fasta"
+        alignment = build_dir + "/{a_or_b}/sequences.aligned.fasta"
     threads: 4
     shell:
         """
@@ -109,9 +111,9 @@ rule nextalign:
 rule cut:
     input:
         oldalignment = rules.nextalign.output.alignment,
-        reference = "config/areference.gbk"
+        reference = "config/{a_or_b}reference.gbk"
     output:
-        slicedalignment = build_dir + "/a/{gene}_slicedalignment.fasta"
+        slicedalignment = build_dir + "/{a_or_b}/{gene}_slicedalignment.fasta"
     params:
         gene = lambda w: w.gene
     shell:
@@ -126,9 +128,9 @@ rule cut:
 rule realign:
     input:
         slicedalignment = rules.cut.output.slicedalignment,
-        reference = build_dir + "/a/{gene}_reference.fasta"
+        reference = build_dir + "/{a_or_b}/{gene}_reference.fasta"
     output:
-        realigned = build_dir + "/a/{gene}_aligned.fasta"
+        realigned = build_dir + "/{a_or_b}/{gene}_aligned.fasta"
     threads: 4
     shell:
         """
@@ -142,10 +144,10 @@ rule realign:
 rule hybrid_align:
     input:
         original = rules.nextalign.output.alignment,
-        G_alignment = build_dir + "/a/G_aligned.fasta",
+        G_alignment = build_dir + "/{a_or_b}/G_aligned.fasta",
         reference = "config/areference.gbk"
     output:
-        hybrid_alignment = build_dir + "/a/hybrid_alignment.fasta"
+        hybrid_alignment = build_dir + "/{a_or_b}/hybrid_alignment.fasta"
     params:
         gene = "genome"
     shell:
@@ -165,36 +167,72 @@ rule hybrid_align:
 #        return build_dir + f"/a/genome_aligned.fasta"
 
 
-rule genes:
+#rule genes:
+#    input:
+#        sequences = build_dir + "/a/hybrid_alignment.fasta"
+#    output:
+#        l = build_dir + "/a/onlySN1-M%GENE.fasta"
+#    shell:
+#        """
+#        python "scripts/onlySN1-Msequences.py" \
+#        --alignment {input.sequences} \
+#        --output {output.l}
+#        """
+
+rule split:
     input:
-        sequences = build_dir + "/a/hybrid_alignment.fasta"
+        sequences = build_dir + "/{a_or_b}/hybrid_alignment.fasta",
+        reference = "config/{a_or_b}reference.gbk",
     output:
-        l = build_dir + "/a/onlySN1-M%GENE.fasta"
+        l = build_dir + "/{a_or_b}/onlyL%GENE.fasta",
+        rest = build_dir + "/{a_or_b}/onlyNS1-M%GENE.fasta"
     shell:
         """
-        python "scripts/onlySN1-Msequences.py" \
-        --alignment {input.sequences} \
-        --output {output.l}
+        python "scripts/split_aligned.py" \
+        --oldalignment {input.sequences} \
+        --loutput {output.l} \
+        --restoutput {output.rest} \
+        --reference {input.reference}
         """
 
-rule only_L:
+#rule realign_split:
+#    message:
+#        """Splitting alignment into L gene and rest of gene"""
+#    input:
+#        alignment = build_dir + "/{a_or_b}/only{L_or_rest}%GENE.fasta"
+#    output:
+#        alignment = build_dir + "/{a_or_b}/only{L_or_rest}%GENE_realign.fasta"
+#    shell:
+#            """
+#        augur align --nthreads 4 \
+#            --sequences {input.alignment} \
+#            --output {output.alignment}
+#        """
+        
+rule check_identical:
+    message:
+        """keeping only sequences which are present in both split files"""
     input:
-        sequences = build_dir + "/a/hybrid_alignment.fasta"
+        l= build_dir + "/{a_or_b}/onlyL%GENE.fasta",
+        rest = build_dir + "/{a_or_b}/onlyNS1-M%GENE.fasta"
     output:
-        l = build_dir + "/a/onlyL%GENE.fasta"
+        l = build_dir + "/{a_or_b}/onlyL%GENE_identical.fasta",
+        rest = build_dir + "/{a_or_b}/onlyNS1-M%GENE_identical.fasta"
     shell:
         """
-        python "scripts/onlyL.py" \
-        --alignment {input.sequences} \
-        --output {output.l}
+        python "scripts/check_identical.py" \
+        --inputl {input.l} \
+        --inputrest {input.rest} \
+        --outputl {output.l} \
+        --outputrest {output.rest}
         """
 
 rule tree:
     message: "Building tree"
     input:
-        alignment = build_dir + "/a/only{L_or_rest}%GENE.fasta"
+        alignment = build_dir + "/{a_or_b}/only{L_or_rest}%GENE_identical.fasta"
     output:
-        tree = build_dir + "/a/only{L_or_rest}tree_raw.nwk"
+        tree = build_dir + "/{a_or_b}/only{L_or_rest}tree_raw.nwk"
     threads: 4
     shell:
         """
@@ -204,25 +242,37 @@ rule tree:
             --nthreads {threads}
         """
 
+
+rule resolve:
+    message:
+        """Resolving trees"""
+    input:
+        tree_L = build_dir + "/{a_or_b}/onlyLtree_raw.nwk",
+        tree_rest = build_dir + "/{a_or_b}/onlyNS1-Mtree_raw.nwk"
+    output:
+        output_L = build_dir + "/{a_or_b}/onlyLtree_resolved.nwk",
+        output_rest = build_dir + "/{a_or_b}/onlyNS1-Mtree_resolved.nwk"
+    shell:
+        """
+        julia "scripts/treeknit.jl" \
+        --treel {input.tree_L} \
+        --treerest {input.tree_rest} \
+        --outputl {output.output_L} \
+        --outputrest {output.output_rest}
+        """
+
 rule refine:
     message:
         """
         Refining tree
-          - estimate timetree
-          - use {params.coalescent} coalescent timescale
-          - estimate {params.date_inference} node dates
         """
     input:
-        tree = rules.tree.output.tree,
+        tree = build_dir + "/{a_or_b}/only{L_or_rest}tree_resolved.nwk",
         alignment = rules.tree.input.alignment,
         metadata = rules.filter.input.metadata
     output:
-        tree = build_dir + "/a/{L_or_rest}tree.nwk",
-        node_data = build_dir + "/a/{L_or_rest}branch_lengths.json"
-    params:
-    	coalescent = config["refine"]["coalescent"],
-    	clock_filter_iqd = config["refine"]["clock_filter_iqd"],
-    	date_inference = config["refine"]["date_inference"]
+        tree = build_dir + "/{a_or_b}/{L_or_rest}tree.nwk",
+        node_data = build_dir + "/{a_or_b}/{L_or_rest}branch_lengths.json"
     shell:
         """
         augur refine \
@@ -231,12 +281,37 @@ rule refine:
             --metadata {input.metadata} \
             --output-tree {output.tree} \
             --output-node-data {output.node_data} \
-            --coalescent {params.coalescent} \
-            --date-inference {params.date_inference} \
-            --date-confidence \
-            --timetree \
-            --clock-filter-iqd {params.clock_filter_iqd}
+            --no-covariance \
+            --keep-polytomies \
+            --keep-root 
         """
+
+#rule refine_generic:
+#    input:
+#        tree = rules.resolve.output.output_L,
+#        alignment = rules.tree.input.alignment,
+#        metadata = rules.filter.input.metadata
+#    output:
+#        tree = build_dir + "/{a_or_b}/{L_or_rest}tree.nwk",
+#        node_data = build_dir + "/{a_or_b}/{L_or_rest}branch_lengths.json"
+##  params:
+ #   	coalescent = config["refine"]["coalescent"],
+ #   	clock_filter_iqd = config["refine"]["clock_filter_iqd"],
+ #   	date_inference = config["refine"]["date_inference"]
+ #   shell:
+ #       """
+ #       augur refine \
+ #           --tree {input.tree} \
+ #           --alignment {input.alignment} \
+ #           --metadata {input.metadata} \
+ #           --output-tree {output.tree} \
+ #           --output-node-data {output.node_data} \
+ #           --coalescent {params.coalescent} \
+ #           --date-inference {params.date_inference} \
+ #           --date-confidence \
+ #           --timetree \
+ #           --clock-filter-iqd {params.clock_filter_iqd}
+ #       """
 
 rule ancestral:
     message:
@@ -248,7 +323,7 @@ rule ancestral:
         tree = rules.refine.output.tree,
         alignment = rules.tree.input.alignment
     output:
-        node_data = build_dir + "/a/{L_or_rest}nt_muts.json"
+        node_data = build_dir + "/{a_or_b}/{L_or_rest}nt_muts.json"
     params:
     	inference = "joint"
     shell:
@@ -265,11 +340,11 @@ rule translate:
     input:
         tree = rules.refine.output.tree,
         node_data = rules.ancestral.output.node_data,
-        reference = build_dir + "/a/genome_reference.gbk",
+        reference = build_dir + "/{a_or_b}/genome_reference.gbk",
     output:
-        node_data = build_dir + "/a/{L_or_rest}aa_muts.json"
+        node_data = build_dir + "/{a_or_b}/{L_or_rest}aa_muts.json"
     params:
-    	alignment_file_mask = build_dir + "/a/aligned_{L_or_rest}%GENE.fasta"
+    	alignment_file_mask = build_dir + "/{a_or_b}/aligned_{L_or_rest}%GENE.fasta"
     shell:
         """
         augur translate \
@@ -285,9 +360,9 @@ rule traits:
         tree = rules.refine.output.tree,
         metadata = rules.filter.input.metadata
     output:
-        node_data = build_dir + "/a/{L_or_rest}traits.json"
+        node_data = build_dir + "/{a_or_b}/{L_or_rest}traits.json"
     log:
-        "logs/a/{L_or_rest}traits_genome_rsv.txt"
+        "logs/{a_or_b}/{L_or_rest}traits_genome_rsv.txt"
     params:
     	columns = config["traits"]["columns"]
     shell:
@@ -308,9 +383,9 @@ rule clades:
         nuc_muts = rules.ancestral.output.node_data,
         clades = "config/clades_G_a.tsv"
     output:
-        node_data = build_dir + "/a/{L_or_rest}clades_G.json"
+        node_data = build_dir + "/{a_or_b}/{L_or_rest}clades_G.json"
     log:
-        "logs/a/{L_or_rest}_clades_genome.txt"
+        "logs/{a_or_b}/{L_or_rest}_clades_genome.txt"
     shell:
         """
         augur clades --tree {input.tree} \

@@ -16,7 +16,7 @@ subtypes: ['b', 'a']
 filter:
   group_by: "year country"
   min_coverage:
-    genome: 0.3
+    genome: 0.8
     G: 0.6
     F: 0.3
 
