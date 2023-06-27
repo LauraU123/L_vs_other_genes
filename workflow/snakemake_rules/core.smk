@@ -209,28 +209,10 @@ rule split:
 #            --output {output.alignment}
 #        """
         
-rule check_identical:
-    message:
-        """keeping only sequences which are present in both split files"""
-    input:
-        l= build_dir + "/{a_or_b}/onlyL%GENE.fasta",
-        rest = build_dir + "/{a_or_b}/onlyNS1-M%GENE.fasta"
-    output:
-        l = build_dir + "/{a_or_b}/onlyL%GENE_identical.fasta",
-        rest = build_dir + "/{a_or_b}/onlyNS1-M%GENE_identical.fasta"
-    shell:
-        """
-        python "scripts/check_identical.py" \
-        --inputl {input.l} \
-        --inputrest {input.rest} \
-        --outputl {output.l} \
-        --outputrest {output.rest}
-        """
-
 rule tree:
     message: "Building tree"
     input:
-        alignment = build_dir + "/{a_or_b}/only{L_or_rest}%GENE_identical.fasta"
+        alignment = build_dir + "/{a_or_b}/only{L_or_rest}%GENE.fasta"
     output:
         tree = build_dir + "/{a_or_b}/only{L_or_rest}tree_raw.nwk"
     threads: 4
