@@ -27,9 +27,7 @@ function main()
 
     t_without = read_tree(rest_tree, label="rest")
     t_L = read_tree(l_tree, label="L")
-
     Knit = run_treeknit!(t_L, t_without, OptArgs(;pre_resolve=true, resolve=true, strict=true))
-
 
     write_newick(parsed_args["outputrest"], t_without) 
     write_newick(parsed_args["outputl"], t_L)
