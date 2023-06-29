@@ -11,9 +11,6 @@ rule all:
         a_or_b = config["subtypes"])
 
 
-#subtype = config.get("subtypes",['a']),
-#build = config.get("buildstorun", ['genome']))
-
 include: "workflow/snakemake_rules/core.smk"
 
 include: "workflow/snakemake_rules/export.smk"
