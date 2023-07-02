@@ -130,7 +130,7 @@ rule realign:
         slicedalignment = rules.cut.output.slicedalignment,
         reference = build_dir + "/{a_or_b}/{gene}_reference.fasta"
     output:
-        realigned = build_dir + "/{a_or_b}/{gene}_aligned.fasta"
+        realigned = build_dir + "/{a_or_b}/{gene}gene_aligned.fasta"
     threads: 4
     shell:
         """
@@ -144,7 +144,7 @@ rule realign:
 rule hybrid_align:
     input:
         original = rules.nextalign.output.alignment,
-        G_alignment = build_dir + "/{a_or_b}/G_aligned.fasta",
+        G_alignment = build_dir + "/{a_or_b}/Ggene_aligned.fasta",
         reference = "config/areference.gbk"
     output:
         hybrid_alignment = build_dir + "/{a_or_b}/hybrid_alignment.fasta"
@@ -195,6 +195,24 @@ rule split:
         --reference {input.reference}
         """
 
+rule trim:
+    """masking sequences"""
+    input:
+        alignment = build_dir + "/{a_or_b}/only{L_or_rest}%GENE.fasta"
+    output:
+        alignment = build_dir + "/{a_or_b}/only{L_or_rest}%GENE_trimmed.fasta"
+    shell:
+        """
+        augur mask \
+        --mask-from-beginning 50 \
+        --mask-from-end 50 \
+        --sequences {input.alignment} \
+        --output {output.alignment}
+        """
+
+
+
+
 #rule realign_split:
 #    message:
 #        """Splitting alignment into L gene and rest of gene"""
@@ -212,7 +230,7 @@ rule split:
 rule tree:
     message: "Building tree"
     input:
-        alignment = build_dir + "/{a_or_b}/only{L_or_rest}%GENE.fasta"
+        alignment = build_dir + "/{a_or_b}/only{L_or_rest}%GENE_trimmed.fasta"
     output:
         tree = build_dir + "/{a_or_b}/only{L_or_rest}tree_raw.nwk"
     threads: 4

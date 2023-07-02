@@ -31,14 +31,14 @@ def split(oldalignment, beforeL, afterL, referencefile, min_length=1):
             sequence = sequence.replace("-", "")
             if sequence != "":
                 before_L_list_2.append(record)
-        SeqIO.write(before_L_list_2, beforeL, "fasta")
+        SeqIO.write(before_L_list_2, afterL, "fasta")
 
         for record in after_L_list:
             sequence =str(record.seq)
             sequence = sequence.replace("-", "")
             if sequence != "":
                 after_L_list_2.append(record)
-        SeqIO.write(after_L_list_2, afterL, "fasta")
+        SeqIO.write(after_L_list_2, beforeL, "fasta")
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="make new reference depending on whether the entire genome or only part is to be used for the tree",
