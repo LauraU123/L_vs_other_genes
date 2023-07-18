@@ -1,5 +1,5 @@
 def get_node_data(w):
-    node_data = [rules.refine.output.node_data,
+    node_data = [rules.branch_lengths.output.node_data,
                     rules.traits.output.node_data,
                     rules.ancestral.output.node_data,
                     rules.translate.output.node_data]
@@ -24,7 +24,7 @@ rule colors:
 rule export:
     message: "Exporting data files for auspice"
     input:
-        tree = rules.refine.output.tree,
+        tree =  build_dir + "/{a_or_b}/{L_or_rest}tree_resolved.nwk",
         metadata = rules.filter.input.metadata,
         node_data = get_node_data,
         colors = rules.colors.output.colors,
@@ -80,16 +80,4 @@ rule rename_clade_labels:
                 --output {output.auspice_json}
 
         cp {input.root_sequence} {output.root_sequence}
-        """
-
-rule treeknit:
-    input:
-        tree_1 = build_dir + "/{a_or_b}/{L_or_rest}tree.nwk",
-        tree_2 = build_dir + "/{a_or_b}/{L_or_rest}tree.nwk",
-    output:
-        "tanglegram.nwk"
-    shell:
-        """
-        Julia \
-        treeknit {input.tree_1} {input.tree_2}
         """

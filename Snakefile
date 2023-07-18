@@ -5,9 +5,9 @@ auspice_dir = 'auspice'
 
 rule all:
     input:
-        expand("auspice/rsv_{a_or_b}_L.json",
+        expand("auspice/rsv_{a_or_b}_onlyL.json",
         a_or_b = config.get("subtypes",['a'])),
-        expand("auspice/rsv_{a_or_b}_NS1-M.json",
+        expand("auspice/rsv_{a_or_b}_onlyNS1-M.json",
         a_or_b = config["subtypes"])
 
 
