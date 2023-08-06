@@ -2,16 +2,16 @@ conda_environment: "workflow/envs/nextstrain.yaml"
 
 genesforglycosylation: ["G", "F"]
 
-buildstorun: ["G"]
+buildstorun: ["genome"]
 
-exclude: "config/outliers.txt"
+exclude: "config/dropped_strains.txt"
 
 description: "config/description.md"
 
 strain_id_field: "accession"
 display_strain_field: "strain_original"
 
-subtypes: ['b', 'a']
+subtypes: ['b']
 
 filter:
   group_by: "year country"
