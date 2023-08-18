@@ -1,5 +1,5 @@
 
-## Comparison of L and the rest of the genome
+# Comparison of L and the rest of the genome
 
 This workflow constructs two parallel phylogenetic analyses with the same sequences.
 These can be viewed as a tanglegram on nextstrain.org to check for duplication in RSV.
@@ -10,7 +10,7 @@ L is the largest gene in RSV, which encodes RNA-dependent RNA polymerase.
 Comparing its evolution to the rest of the genome can check
 whether recombination occurs.
 
-# Workflow 
+## Workflow 
 
 is workflow uses a similar principle to the main nextstrain/rsv workflow, 
 but does not include clades or glycosylation, and splits the sequence alignment into two,
