@@ -1,7 +1,9 @@
+
+"""This code replaces the G gene in the whole genome pairwise alignment by a MSA of G"""
+
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
-import shutil
-import argparse
+import shutil, argparse
 
 def alignfortree(realign, align, reference, newoutput, build):
     records = []

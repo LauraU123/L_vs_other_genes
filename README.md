@@ -7,8 +7,8 @@ These can be viewed as a tanglegram on nextstrain.org to check for duplication i
 ## The L gene
 
 L is the largest gene in RSV, which encodes RNA-dependent RNA polymerase.
-Comparing its evolution to the rest of the genome can show
-whether recombination occurs. 
+Comparing its evolution to the rest of the genome can check
+whether recombination occurs.
 
 # Workflow 
 
@@ -16,7 +16,7 @@ is workflow uses a similar principle to the main nextstrain/rsv workflow,
 but does not include clades or glycosylation, and splits the sequence alignment into two,
 constructing two separate analyses based on the same sequences. 
 
-It includes a step to find MCCs (Maximally Compatible Clades) using the TreeKnit Julia package.
+It includes a step to find MCCs (Maximally Compatible Clades) using the [TreeKnit Julia](https://github.com/PierreBarrat/TreeKnit.jl) package.
 
 
 * Input: RSV reference files, metadata and sequences
